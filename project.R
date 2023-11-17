@@ -1,13 +1,16 @@
 
 
+library(tidyverse)
 
-setwd("C:/Users/Zachary Knepp/OneDrive/Desktop/data")
 
+population_path <- "https://www.dropbox.com/scl/fi/efu5kcp5zy3dxn1irlzly/Prognose_P.csv?rlkey=zm6gjdurzd014a2rt4c57bexj&dl=1"
+sales_path <- "https://www.dropbox.com/scl/fi/b7l74h4ak6syr3z7lt823/Prognose_S.csv?rlkey=7sx3g0gvpel8o66l0dmkkxpmx&dl=1"
 
-df <- read.csv("apartment_pop.csv")
+salesdata <- read.csv(sales_path)
+popdata <- read.csv(population_path)
 
-head(df)
-
+dim(salesdata)
+dim(popdata)
 
 
 #total_appraised <- df['Total.Appraised.Value']
