@@ -1,5 +1,6 @@
 
 
+
 library(tidyverse)
 
 
@@ -13,24 +14,45 @@ dim(salesdata)
 dim(popdata)
 
 
+names(salesdata)
+
+
+
 #total_appraised <- df['Total.Appraised.Value']
-land_appraised <- df['Land.Appraised.Value']
-sqft <- df['Total.Finished.Area']
-x <- df['GIS.Coord.1']
-y <- df['GIS.Coord.2']
+#land_appraised <- salesdata['Land.Appraised.Value']
+#sqft <- salesdata['Total.Finished.Area']
+x <- salesdata['LONGITUDE']
+y <- salesdata['LATITUDE']
+gla <- salesdata['GLA']
 
 #df_cont <- data.frame(land_appraised, sqft, x, y)
-df_cont <- data.frame(x, y)
+df_cont <- data.frame(x, y, gla)
 df_cont <- na.omit(df_cont)
 
-df_cont <- df_cont[1:50,]
+dim(df_cont)
+
+df_cont$LONGITUDE <- as.numeric(df_cont$LONGITUDE)
+df_cont$LATITUDE <- as.numeric(df_cont$LATITUDE)
+df_cont$GLA <- as.numeric(df_cont$GLA)
+
+sub <- c(1:20, 1000:1020, 10000:10020)
+df_cont <- df_cont[sub,]
 dim(df_cont)
 
 df_cont
 
+class(df_cont$GLA)
+class(df_cont$LONGITUDE)
+class(df_cont$LATITUDE)
 
 
-eps_list <- list(0.002, 0.02, 0.2)
+result <- dbscan(df_cont, eps = 0.0002, minPts = 2)
+
+result
+
+
+
+eps_list <- list(0.0002, 0.02, 0.2)
 minpoints <- list(2,3,4)
 results_list <- list()
 df_results <- data.frame()
@@ -42,7 +64,7 @@ for (eps in eps_list) {
     df$eps <- eps
     df$pts <- minpts
     df_results <- rbind(df_results, df)
-  
+    
   }
 }
 
@@ -85,7 +107,7 @@ dbscan <- function(data, eps, minPts) {
       clusters[i] <- -1
     } else {
       cluster_id <- cluster_id + 1
-      expand_cluster(data, clusters, i, neighbors, cluster_id, eps, minPts)
+      clusters <- expand_cluster(data, clusters, i, neighbors, cluster_id, eps, minPts)
     }
   }
   # returns the clusters as a list
@@ -102,7 +124,8 @@ expand_cluster <- function(data, clusters, point_index, neighbors, cluster_id, e
     
     if (clusters[current_point] == -1) {
       clusters[current_point] <- cluster_id
-    } else if (clusters[current_point] == 0) {
+    } 
+    else if (clusters[current_point] == 0) {
       clusters[current_point] <- cluster_id
       
       current_neighbors <- numeric(0)
@@ -113,12 +136,13 @@ expand_cluster <- function(data, clusters, point_index, neighbors, cluster_id, e
       }
       
       if (length(current_neighbors) >= minPts) {
-        neighbors <- c(neighbors, current_neighbors)
+        neighbors <- unique(c(neighbors, current_neighbors))
       }
     }
     
     i <- i + 1
   }
+  return(clusters)
 }
 
 
