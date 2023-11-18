@@ -24,18 +24,27 @@ names(salesdata)
 x <- salesdata['LONGITUDE']
 y <- salesdata['LATITUDE']
 gla <- salesdata['GLA']
+yrblt <- salesdata['YearBuilt']
 
 #df_cont <- data.frame(land_appraised, sqft, x, y)
-df_cont <- data.frame(x, y, gla)
-df_cont <- na.omit(df_cont)
+df_cont <- data.frame(x, y, gla, yrblt)
 
+df_cont <- na.omit(df_cont)
 dim(df_cont)
 
 df_cont$LONGITUDE <- as.numeric(df_cont$LONGITUDE)
 df_cont$LATITUDE <- as.numeric(df_cont$LATITUDE)
 df_cont$GLA <- as.numeric(df_cont$GLA)
+df_cont$YearBuilt <- as.numeric(df_cont$YearBuilt)
 
-sub <- c(1:20, 1000:1020, 10000:10020)
+df_cont <- na.omit(df_cont)
+dim(df_cont)
+
+
+
+
+
+sub <- c(1:50, 1000:2050, 10000:10050)
 df_cont <- df_cont[sub,]
 dim(df_cont)
 
@@ -46,13 +55,13 @@ class(df_cont$LONGITUDE)
 class(df_cont$LATITUDE)
 
 
-result <- dbscan(df_cont, eps = 0.0002, minPts = 2)
+result <- dbscan(df_cont, eps = 0.2, minPts = 3)
 
 result
 
 
 
-eps_list <- list(0.0002, 0.02, 0.2)
+eps_list <- list(0.002, 0.02, 0.2)
 minpoints <- list(2,3,4)
 results_list <- list()
 df_results <- data.frame()
@@ -148,51 +157,38 @@ expand_cluster <- function(data, clusters, point_index, neighbors, cluster_id, e
 
 
 
+
+
 ##############
 # SHINY APP  #
 ##############
 
 
-#install.packages("shiny")
+install.packages("shiny")
 #install.packages("leaflet")
-
-
 library(shiny)
-library(leaflet)
-library(ggplot2)
-
-# Sample data for demonstration
-data1 <- data.frame(
-  x = c(37.7749, 34.0522, 40.7128, 41.8781, 33.4484, 30.2672, 32.7157, 29.7604, 42.3601, 38.8951),
-  y = c(-122.4194, -118.2437, -74.0060, -87.6298, -112.0740, -97.7431, -117.1611, -95.3698, -71.0589, -77.0364),
-  group = c(1,1,1,2,2,1,2,1,1,2)
-)
-
-data2 <- data.frame(
-  x = c(51.5074, 48.8566, 52.5200, 53.3498, 55.7558, 40.7128, 37.7749, 41.9028, 55.6761, 48.8566),
-  y = c(-0.1278, 2.3522, 13.4050, -6.2602, 37.6176, -74.0060, -122.4194, 12.4964, 12.5683, 2.3522),
-  group = c(2,2,2,1,1,2,1,2,2,2)
-)
-
-data3 <- data.frame(
-  x = c(-33.8688, -27.4698, -37.8136, -34.6118, -23.5505, -26.2041, -36.8485, -28.6139, -37.7749, -41.2865),
-  y = c(151.2093, 153.0251, 144.9631, 138.5921, -46.6333, 28.0473, 174.7633, 77.2090, 144.9631, 174.7762),
-  group = c(1,2,1,2,1,1,1,2,2,2)
-)
-
-
-
 
 ui <- fluidPage(
-  titlePanel("Basic Mapping App"),
-  div(
-    h3(
-      selectInput("data_selection", "Select an Algorithm:",
-                  choices = c("DBSCAN", "Kmeans", "Hierarchal"),
-                  selected = "DBSCAN")
+  titlePanel("Number Comparables Finder"),
+  
+  sidebarLayout(
+    sidebarPanel(
+      helpText("Enter numbers to compare with the dataset"),
+      
+      # Input: Enter numbers
+      textInput("numbers", "Please enter the Square Footage:", ""),
+      # Input: Enter numbers
+      textInput("numbers", "Please enter the Longitude:", ""),
+      # Input: Enter numbers
+      textInput("numbers", "Please enter the Latitude:", ""),
+
+      
+      submitButton("Submit")
     ),
+    
     mainPanel(
-      plotOutput("scatterplot", width = "800px", height = "600px")
+      # Output: Display results
+      tableOutput("results")
     )
   )
 )
@@ -200,30 +196,36 @@ ui <- fluidPage(
 
 
 
-
-# Define the server
-server <- function(input, output, session) {
-  # Render the scatterplot based on the selected data source
-  output$scatterplot <- renderPlot({
-    selected_data <- switch(input$data_selection,
-                            "DBSCAN" = data1,
-                            "Kmeans" = data2,
-                            "Hierarchal" = data3,
-                            data1  # Default selection
-    )
-    ggplot(selected_data, aes(x = x, y = y, color = factor(group))) +
-      geom_point(size = 3) +
-      labs(title = "Coordinates by Group") +
-      scale_color_discrete(name = "Group") +
-      theme(
-        text = element_text(size = 20)
-      )
-    #plot(selected_data$x, selected_data$y, main = "Selected Data Plot")
+server <- function(input, output) {
+  
+  # Function to find similar data points
+  find_comparables <- function(input_numbers, dataset) {
+    # Logic to compare input_numbers with dataset and find comparables
+    # Return the comparable data points
+  }
+  
+  output$results <- renderTable({
+    # Ensure that input is not empty
+    if (input$numbers == "") {
+      return()
+    }
+    
+    # Convert input numbers into a numeric vector
+    input_numbers <- as.numeric(unlist(strsplit(input$numbers, ",")))
+    
+    # Call the function to find comparables
+    comparables <- find_comparables(input_numbers, your_dataframe)
+    
+    # Return the comparable data
+    comparables
   })
 }
 
 
 shinyApp(ui, server)
+
+
+
 
 
 
