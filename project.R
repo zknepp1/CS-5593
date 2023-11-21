@@ -1,6 +1,5 @@
 
 
-
 library(tidyverse)
 
 
@@ -44,8 +43,10 @@ dim(df_cont)
 
 
 
-sub <- c(1:50, 1000:2050, 10000:10050)
-df_cont <- df_cont[sub,]
+#sub <- c(1:50, 1000:1050, 10000:10050)
+#df_cont <- df_cont[sub,]
+
+
 dim(df_cont)
 
 df_cont
@@ -53,35 +54,30 @@ df_cont
 class(df_cont$GLA)
 class(df_cont$LONGITUDE)
 class(df_cont$LATITUDE)
+class(df_cont$YearBuilt)
 
-
-result <- dbscan(df_cont, eps = 0.2, minPts = 3)
+result <- dbscan(df_cont, eps = 20, minPts = 3)
 
 result
 
 
 
-eps_list <- list(0.002, 0.02, 0.2)
-minpoints <- list(2,3,4)
-results_list <- list()
-df_results <- data.frame()
+df_cont$cluster <- result$cluster
+head(df_cont)
 
-for (eps in eps_list) {
-  for (minpts in minpoints){
-    result <- dbscan(df_cont, eps = eps, minPts = minpts)
-    df <- data.frame(df_cont, result$cluster)
-    df$eps <- eps
-    df$pts <- minpts
-    df_results <- rbind(df_results, df)
-    
-  }
-}
+dim(df_cont)
 
 
-df_results
+head(df_cont, 6)
 
 
- 
+
+
+
+
+
+
+
 
 
 
@@ -166,7 +162,33 @@ expand_cluster <- function(data, clusters, point_index, neighbors, cluster_id, e
 
 install.packages("shiny")
 #install.packages("leaflet")
+
+
+
+
+# Table to compare
+df_cont
+names(df_cont)
+
+
 library(shiny)
+
+
+calculate_similarity <- function(input_property, df) {
+  distances <- numeric(nrow(df))
+  for(i in 1:nrow(df)){
+    distances[i] <- sqrt((df$GLA[i] - input_property$squareFootage)^2 +
+                           (df$LONGITUDE[i] - input_property$longitude)^2 +
+                           (df$LATITUDE[i] - input_property$latitude)^2 +
+                           (df$YearBuilt[i] - input_property$YearBuilt)^2)
+  }
+  
+  df$distances <- distances
+  print(distances)
+  return(df)
+}
+
+
 
 ui <- fluidPage(
   titlePanel("Number Comparables Finder"),
@@ -175,15 +197,28 @@ ui <- fluidPage(
     sidebarPanel(
       helpText("Enter numbers to compare with the dataset"),
       
-      # Input: Enter numbers
-      textInput("numbers", "Please enter the Square Footage:", ""),
-      # Input: Enter numbers
-      textInput("numbers", "Please enter the Longitude:", ""),
-      # Input: Enter numbers
-      textInput("numbers", "Please enter the Latitude:", ""),
+      # Input: Enter Square Footage
+      numericInput("squareFootage", "Please enter the Square Footage:", value = 500),
 
+      # Input: Enter year built
+      numericInput("yblt", "Please enter the Year Built:", value = 2000),
       
-      submitButton("Submit")
+      # Input: Slider for the number of bins ----
+      sliderInput(inputId = "longitude",
+                  label = "Please enter the Longitude:",
+                  min = -97.673696,
+                  max = -97.145898,
+                  value = -97.4),
+      
+      # Input: Slider for the number of bins ----
+      sliderInput(inputId = "latitude",
+                  label = "Please enter the Latitude:",
+                  min = 35.377213,
+                  max = 35.725231,
+                  value = 35.5),
+      
+      
+      actionButton(inputId = "submit", label = "Submit")
     ),
     
     mainPanel(
@@ -198,31 +233,38 @@ ui <- fluidPage(
 
 server <- function(input, output) {
   
-  # Function to find similar data points
-  find_comparables <- function(input_numbers, dataset) {
-    # Logic to compare input_numbers with dataset and find comparables
-    # Return the comparable data points
-  }
-  
-  output$results <- renderTable({
-    # Ensure that input is not empty
-    if (input$numbers == "") {
+  data_to_display <- eventReactive(input$submit, {
+    if (is.null(input$squareFootage) || is.null(input$longitude) || is.null(input$latitude) || is.null(input$yblt)) {
       return()
     }
     
-    # Convert input numbers into a numeric vector
-    input_numbers <- as.numeric(unlist(strsplit(input$numbers, ",")))
+    input_property <- data.frame(squareFootage = input$squareFootage,
+                                 longitude = input$longitude,
+                                 latitude = input$latitude,
+                                 YearBuilt = input$yblt) # Changed to match df_cont column name
     
-    # Call the function to find comparables
-    comparables <- find_comparables(input_numbers, your_dataframe)
     
-    # Return the comparable data
-    comparables
+
+    similar_properties <- calculate_similarity(input_property, df_cont)
+    sorted_properties <- similar_properties[order(similar_properties$distances), ] # Corrected column name
+    top_six <- head(df_cont, 6)
+    top_six
+  })
+  
+  output$results <- renderTable({
+    data_to_display()
   })
 }
 
 
 shinyApp(ui, server)
+
+
+
+
+
+
+
 
 
 
