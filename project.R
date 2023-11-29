@@ -2,7 +2,7 @@
 
 library(tidyverse)
 
-
+# Path to the data
 population_path <- "https://www.dropbox.com/scl/fi/efu5kcp5zy3dxn1irlzly/Prognose_P.csv?rlkey=zm6gjdurzd014a2rt4c57bexj&dl=1"
 sales_path <- "https://www.dropbox.com/scl/fi/b7l74h4ak6syr3z7lt823/Prognose_S.csv?rlkey=7sx3g0gvpel8o66l0dmkkxpmx&dl=1"
 
@@ -16,10 +16,7 @@ dim(popdata)
 names(salesdata)
 
 
-
-#total_appraised <- df['Total.Appraised.Value']
-#land_appraised <- salesdata['Land.Appraised.Value']
-#sqft <- salesdata['Total.Finished.Area']
+# Variables I decided to use
 x <- salesdata['LONGITUDE']
 y <- salesdata['LATITUDE']
 gla <- salesdata['GLA']
@@ -31,6 +28,8 @@ df_cont <- data.frame(x, y, gla, yrblt)
 df_cont <- na.omit(df_cont)
 dim(df_cont)
 
+
+# Making sure they are numeric
 df_cont$LONGITUDE <- as.numeric(df_cont$LONGITUDE)
 df_cont$LATITUDE <- as.numeric(df_cont$LATITUDE)
 df_cont$GLA <- as.numeric(df_cont$GLA)
@@ -43,10 +42,6 @@ dim(df_cont)
 
 
 
-#sub <- c(1:50, 1000:1050, 10000:10050)
-#df_cont <- df_cont[sub,]
-
-
 dim(df_cont)
 
 df_cont
@@ -56,6 +51,9 @@ class(df_cont$LONGITUDE)
 class(df_cont$LATITUDE)
 class(df_cont$YearBuilt)
 
+
+
+# putting data in DBSCAN algorithm
 result <- dbscan(df_cont, eps = 20, minPts = 3)
 
 result
@@ -173,7 +171,8 @@ names(df_cont)
 
 library(shiny)
 
-
+# Similarity function
+# calculates similarity between the variables, squareFootage, YearBuilt, longitude, and latitude
 calculate_similarity <- function(input_property, df) {
   distances <- numeric(nrow(df))
   for(i in 1:nrow(df)){
@@ -189,7 +188,7 @@ calculate_similarity <- function(input_property, df) {
 }
 
 
-
+# The is part of the shiney app that the user will see
 ui <- fluidPage(
   titlePanel("Number Comparables Finder"),
   
@@ -230,7 +229,9 @@ ui <- fluidPage(
 
 
 
-
+# This is the backend server that controls the app
+# Right now it prints out the 6 most similar properties.
+# I would like to be able to value properties with a sales comparison approach.
 server <- function(input, output) {
   
   data_to_display <- eventReactive(input$submit, {
