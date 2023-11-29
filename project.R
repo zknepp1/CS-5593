@@ -1,8 +1,7 @@
 
-
 library(tidyverse)
+library(dplyr)
 
-# Path to the data
 population_path <- "https://www.dropbox.com/scl/fi/efu5kcp5zy3dxn1irlzly/Prognose_P.csv?rlkey=zm6gjdurzd014a2rt4c57bexj&dl=1"
 sales_path <- "https://www.dropbox.com/scl/fi/b7l74h4ak6syr3z7lt823/Prognose_S.csv?rlkey=7sx3g0gvpel8o66l0dmkkxpmx&dl=1"
 
@@ -16,24 +15,29 @@ dim(popdata)
 names(salesdata)
 
 
-# Variables I decided to use
+
 x <- salesdata['LONGITUDE']
 y <- salesdata['LATITUDE']
 gla <- salesdata['GLA']
 yrblt <- salesdata['YearBuilt']
+sprice <- salesdata['SoldPrice']
 
-#df_cont <- data.frame(land_appraised, sqft, x, y)
-df_cont <- data.frame(x, y, gla, yrblt)
+sprice
+
+
+df_cont <- data.frame(x, y, gla, yrblt, sprice)
+
+df_cont
+
 
 df_cont <- na.omit(df_cont)
 dim(df_cont)
 
-
-# Making sure they are numeric
 df_cont$LONGITUDE <- as.numeric(df_cont$LONGITUDE)
 df_cont$LATITUDE <- as.numeric(df_cont$LATITUDE)
 df_cont$GLA <- as.numeric(df_cont$GLA)
 df_cont$YearBuilt <- as.numeric(df_cont$YearBuilt)
+#df_cont$sprice <- as.numeric(df_cont$sprice)
 
 df_cont <- na.omit(df_cont)
 dim(df_cont)
@@ -41,20 +45,15 @@ dim(df_cont)
 
 
 
+
+set.seed(100)
+df_cont <- df_cont[sample(nrow(df_cont), 250), ]
 
 dim(df_cont)
 
 df_cont
 
-class(df_cont$GLA)
-class(df_cont$LONGITUDE)
-class(df_cont$LATITUDE)
-class(df_cont$YearBuilt)
-
-
-
-# putting data in DBSCAN algorithm
-result <- dbscan(df_cont, eps = 20, minPts = 3)
+result <- dbscan(df_cont, eps = 200, minPts = 3)
 
 result
 
@@ -171,8 +170,7 @@ names(df_cont)
 
 library(shiny)
 
-# Similarity function
-# calculates similarity between the variables, squareFootage, YearBuilt, longitude, and latitude
+
 calculate_similarity <- function(input_property, df) {
   distances <- numeric(nrow(df))
   for(i in 1:nrow(df)){
@@ -187,8 +185,14 @@ calculate_similarity <- function(input_property, df) {
   return(df)
 }
 
+calculate_averages <- function(df) {
+  averages <- colMeans(df[sapply(df, is.numeric)])
+  return(data.frame(t(averages)))
+}
 
-# The is part of the shiney app that the user will see
+
+
+
 ui <- fluidPage(
   titlePanel("Number Comparables Finder"),
   
@@ -198,7 +202,7 @@ ui <- fluidPage(
       
       # Input: Enter Square Footage
       numericInput("squareFootage", "Please enter the Square Footage:", value = 500),
-
+      
       # Input: Enter year built
       numericInput("yblt", "Please enter the Year Built:", value = 2000),
       
@@ -222,19 +226,20 @@ ui <- fluidPage(
     
     mainPanel(
       # Output: Display results
-      tableOutput("results")
+      tableOutput("results"),
+      tableOutput("averages")
     )
   )
 )
 
 
 
-# This is the backend server that controls the app
-# Right now it prints out the 6 most similar properties.
-# I would like to be able to value properties with a sales comparison approach.
+
 server <- function(input, output) {
   
-  data_to_display <- eventReactive(input$submit, {
+  
+  
+  comps <- eventReactive(input$submit, {
     if (is.null(input$squareFootage) || is.null(input$longitude) || is.null(input$latitude) || is.null(input$yblt)) {
       return()
     }
@@ -245,34 +250,28 @@ server <- function(input, output) {
                                  YearBuilt = input$yblt) # Changed to match df_cont column name
     
     
-
+    
     similar_properties <- calculate_similarity(input_property, df_cont)
     sorted_properties <- similar_properties[order(similar_properties$distances), ] # Corrected column name
     top_six <- head(df_cont, 6)
-    top_six
+
+    averages <- calculate_averages(top_six)
+    
+    list(top_six = top_six, averages = averages)
+    
   })
   
   output$results <- renderTable({
-    data_to_display()
+    comps()$top_six
+  })
+  
+  output$averages <- renderTable({
+    comps()$averages
   })
 }
 
 
 shinyApp(ui, server)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
