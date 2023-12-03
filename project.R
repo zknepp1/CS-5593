@@ -1,4 +1,3 @@
-
 library(tidyverse)
 library(dplyr)
 
@@ -37,7 +36,7 @@ df_cont$LONGITUDE <- as.numeric(df_cont$LONGITUDE)
 df_cont$LATITUDE <- as.numeric(df_cont$LATITUDE)
 df_cont$GLA <- as.numeric(df_cont$GLA)
 df_cont$YearBuilt <- as.numeric(df_cont$YearBuilt)
-#df_cont$sprice <- as.numeric(df_cont$sprice)
+df_cont$SoldPrice <- as.numeric(df_cont$SoldPrice)
 
 df_cont <- na.omit(df_cont)
 dim(df_cont)
@@ -151,10 +150,20 @@ expand_cluster <- function(data, clusters, point_index, neighbors, cluster_id, e
 
 
 
+#############################################################################################
+#############################################################################################
+# SHINY APP  ################################################################################
+#############################################################################################
+#############################################################################################
 
-##############
-# SHINY APP  #
-##############
+
+
+
+
+
+
+
+
 
 
 install.packages("shiny")
@@ -171,24 +180,49 @@ names(df_cont)
 library(shiny)
 
 
-calculate_similarity <- function(input_property, df) {
-  distances <- numeric(nrow(df))
-  for(i in 1:nrow(df)){
-    distances[i] <- sqrt((df$GLA[i] - input_property$squareFootage)^2 +
-                           (df$LONGITUDE[i] - input_property$longitude)^2 +
-                           (df$LATITUDE[i] - input_property$latitude)^2 +
-                           (df$YearBuilt[i] - input_property$YearBuilt)^2)
+calculate_similarity <- function(input_property, df_cont) {
+  distances <- numeric(nrow(df_cont))
+  for(i in 1:nrow(df_cont)){
+    distances[i] <- sqrt((df_cont$GLA[i] - input_property$squareFootage)^2 +
+                           (df_cont$LONGITUDE[i] - input_property$longitude)^2 +
+                           (df_cont$LATITUDE[i] - input_property$latitude)^2 +
+                           (df_cont$YearBuilt[i] - input_property$YearBuilt)^2)
   }
   
-  df$distances <- distances
+  df_cont$distances <- distances
   print(distances)
-  return(df)
+  return(df_cont)
 }
+
 
 calculate_averages <- function(df) {
   averages <- colMeans(df[sapply(df, is.numeric)])
   return(data.frame(t(averages)))
 }
+
+
+
+#sales comparison approach function
+
+sales_comparison <- function(subject, comparables) {
+  # Calculate adjustment factors
+  subject_gla <- subject$squareFootage
+  comparables$gla_adjustment <- subject_gla / comparables$GLA
+  
+  
+  
+  # Adjust comparable sales prices
+  comparables$adjusted_price <- comparables$SoldPrice * comparables$gla_adjustment
+  
+  # Calculate estimated sales price as the average of adjusted comparable prices
+  estimated_sales_price <- mean(comparables$adjusted_price)
+  
+  
+  return(estimated_sales_price)
+}
+
+
+
 
 
 
@@ -200,20 +234,20 @@ ui <- fluidPage(
     sidebarPanel(
       helpText("Enter numbers to compare with the dataset"),
       
-      # Input: Enter Square Footage
+      # Input - Enter Square Footage
       numericInput("squareFootage", "Please enter the Square Footage:", value = 500),
       
-      # Input: Enter year built
+      # Input - Enter year built
       numericInput("yblt", "Please enter the Year Built:", value = 2000),
       
-      # Input: Slider for the number of bins ----
+      #Input - Slider for the number of bins
       sliderInput(inputId = "longitude",
                   label = "Please enter the Longitude:",
                   min = -97.673696,
                   max = -97.145898,
                   value = -97.4),
       
-      # Input: Slider for the number of bins ----
+      # Input - Slider for the number of bins
       sliderInput(inputId = "latitude",
                   label = "Please enter the Latitude:",
                   min = 35.377213,
@@ -225,7 +259,8 @@ ui <- fluidPage(
     ),
     
     mainPanel(
-      # Output: Display results
+      # OutpuT
+      print('hello'),
       tableOutput("results"),
       tableOutput("averages")
     )
@@ -237,8 +272,6 @@ ui <- fluidPage(
 
 server <- function(input, output) {
   
-  
-  
   comps <- eventReactive(input$submit, {
     if (is.null(input$squareFootage) || is.null(input$longitude) || is.null(input$latitude) || is.null(input$yblt)) {
       return()
@@ -247,31 +280,50 @@ server <- function(input, output) {
     input_property <- data.frame(squareFootage = input$squareFootage,
                                  longitude = input$longitude,
                                  latitude = input$latitude,
-                                 YearBuilt = input$yblt) # Changed to match df_cont column name
+                                 YearBuilt = input$yblt)
     
     
+    estimated_sp <- sales_comparison(input_property, df_cont)
     
     similar_properties <- calculate_similarity(input_property, df_cont)
-    sorted_properties <- similar_properties[order(similar_properties$distances), ] # Corrected column name
+    
+    sorted_properties <- similar_properties[order(similar_properties$distances), ]
+    
     top_six <- head(df_cont, 6)
-
+    
     averages <- calculate_averages(top_six)
+    
+    averages$esp <- estimated_sp
     
     list(top_six = top_six, averages = averages)
     
   })
   
-  output$results <- renderTable({
-    comps()$top_six
-  })
-  
-  output$averages <- renderTable({
-    comps()$averages
-  })
+  output$results <- renderTable({comps()$top_six})
+  output$averages <- renderTable({comps()$averages})
 }
 
 
 shinyApp(ui, server)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
