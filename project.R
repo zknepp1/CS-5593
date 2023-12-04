@@ -207,12 +207,20 @@ calculate_averages <- function(df) {
 sales_comparison <- function(subject, comparables) {
   # Calculate adjustment factors
   subject_gla <- subject$squareFootage
+  subject_yblt <- subject$YearBuilt
+  subject_latitude <- subject$latitude
+  subject_longitude <- subject$longitude
+  
+  
   comparables$gla_adjustment <- subject_gla / comparables$GLA
+  comparables$yblt_adjustment <- subject_gla / comparables$YearBuilt
+  comparables$lat_adjustment <- subject_gla / comparables$LATITUDE
+  comparables$long_adjustment <- subject_gla / comparables$LONGITUDE
   
   
   
   # Adjust comparable sales prices
-  comparables$adjusted_price <- comparables$SoldPrice * comparables$gla_adjustment
+  comparables$adjusted_price <- comparables$SoldPrice * comparables$gla_adjustment * comparables$yblt_adjustment * comparables$lat_adjustment * comparables$long_adjustment
   
   # Calculate estimated sales price as the average of adjusted comparable prices
   estimated_sales_price <- mean(comparables$adjusted_price)
@@ -229,6 +237,17 @@ sales_comparison <- function(subject, comparables) {
 
 ui <- fluidPage(
   titlePanel("Number Comparables Finder"),
+  # Embedding JavaScript inside the UI
+  tags$head(
+    tags$script(HTML('
+      $(document).on("click", "#submit", function() {
+        $("#squareFootage").val("");
+        $("#yblt").val("");
+        $("#longitude").val("");
+        $("#latitude").val("");
+      });
+    '))
+  ),
   
   sidebarLayout(
     sidebarPanel(
@@ -260,8 +279,9 @@ ui <- fluidPage(
     
     mainPanel(
       # OutpuT
-      print('hello'),
+      print('Comparables'),
       tableOutput("results"),
+      print('Estimated Sales Price'),
       tableOutput("averages")
     )
   )
@@ -305,13 +325,4 @@ server <- function(input, output) {
 
 
 shinyApp(ui, server)
-
-
-
-
-
-
-
-
-
 
