@@ -413,12 +413,18 @@ server <- function(input, output) {
 
 shinyApp(ui, server)
 
+# k = 3:  Total SSE:  756.5103  
+# k = 4:  Total SSE:  623.5375 
+# k = 5:  Total SSE:  577.2545  
+# k = 6:  Total SSE:  491.8613 
+# k = 7:  Total SSE:  459.5824 
+# k = 8:  Total SSE:  425.9525 
+# k = 9:  Total SSE:  414.3679 
+# k = 10: Total SSE:  395.5399 
+# k = 11: Total SSE:  372.4215  
 
-
-
-
-
-
-
+SSE <- data.frame(756.5103, 623.5375, 577.2545 ,491.8613, 459.5824, 425.9525, 414.3679, 395.5399, 372.4215)
+SSE <- as.numeric(SSE)
+lines(SSE) + title("SSE for enhanced k-means") # SSE for enhanced k-means
 
 
