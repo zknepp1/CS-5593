@@ -190,7 +190,7 @@ calculate_similarity <- function(input_property, df_cont) {
   }
   
   df_cont$distances <- distances
-  print(distances)
+  #print(distances)
   return(df_cont)
 }
 
@@ -205,6 +205,10 @@ calculate_averages <- function(df) {
 #sales comparison approach function
 
 sales_comparison <- function(subject, comparables) {
+  
+  print(comparables)
+  
+  
   # Calculate adjustment factors
   subject_gla <- subject$squareFootage
   subject_yblt <- subject$YearBuilt
@@ -212,15 +216,23 @@ sales_comparison <- function(subject, comparables) {
   subject_longitude <- subject$longitude
   
   
-  comparables$gla_adjustment <- subject_gla / comparables$GLA
+  
+  comparables$gla_adjustment <- subject_gla /comparables$GLA
   comparables$yblt_adjustment <- subject_gla / comparables$YearBuilt
   comparables$lat_adjustment <- subject_gla / comparables$LATITUDE
   comparables$long_adjustment <- subject_gla / comparables$LONGITUDE
   
+  comparables$adj_amount <- comparables$gla_adjustment
+  
+  
   
   
   # Adjust comparable sales prices
-  comparables$adjusted_price <- comparables$SoldPrice * comparables$gla_adjustment * comparables$yblt_adjustment * comparables$lat_adjustment * comparables$long_adjustment
+  comparables$adjusted_price <- comparables$SoldPrice * comparables$gla_adjustment * comparables$yblt_adjustment * comparables$lat_adjustment * abs(comparables$long_adjustment)
+  
+  print('adjusted price!!!!!!!!!!!!!')
+  #print(comparables$adjusted_price)
+  print(comparables)
   
   # Calculate estimated sales price as the average of adjusted comparable prices
   estimated_sales_price <- mean(comparables$adjusted_price)
@@ -228,9 +240,6 @@ sales_comparison <- function(subject, comparables) {
   
   return(estimated_sales_price)
 }
-
-
-
 
 
 
@@ -325,4 +334,14 @@ server <- function(input, output) {
 
 
 shinyApp(ui, server)
+
+
+
+
+
+
+
+
+
+
 
