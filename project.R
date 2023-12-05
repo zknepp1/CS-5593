@@ -161,20 +161,17 @@ expand_cluster <- function(data, clusters, point_index, neighbors, cluster_id, e
 
 
 
-
-
-
-
-
-install.packages("shiny")
-#install.packages("leaflet")
-
-
-
-
 # Table to compare
 df_cont
 names(df_cont)
+
+
+
+
+
+#install.packages("shiny")
+#install.packages("leaflet")
+
 
 
 library(shiny)
@@ -206,36 +203,23 @@ calculate_averages <- function(df) {
 
 sales_comparison <- function(subject, comparables) {
   
+  
+  print('comparable')
+  
+  
   print(comparables)
   
+  clus <- comparables$cluster
   
-  # Calculate adjustment factors
-  subject_gla <- subject$squareFootage
-  subject_yblt <- subject$YearBuilt
-  subject_latitude <- subject$latitude
-  subject_longitude <- subject$longitude
+  filtered_comps <- df_cont[df_cont$cluster == clus, ]
   
+  print('FILTERED!!!!!!!!!')
+  print(filtered_comps)
   
-  
-  comparables$gla_adjustment <- subject_gla /comparables$GLA
-  comparables$yblt_adjustment <- subject_gla / comparables$YearBuilt
-  comparables$lat_adjustment <- subject_gla / comparables$LATITUDE
-  comparables$long_adjustment <- subject_gla / comparables$LONGITUDE
-  
-  comparables$adj_amount <- comparables$gla_adjustment
-  
-  
-  
-  
-  # Adjust comparable sales prices
-  comparables$adjusted_price <- comparables$SoldPrice * comparables$gla_adjustment * comparables$yblt_adjustment * comparables$lat_adjustment * abs(comparables$long_adjustment)
-  
-  print('adjusted price!!!!!!!!!!!!!')
-  #print(comparables$adjusted_price)
-  print(comparables)
-  
+
+
   # Calculate estimated sales price as the average of adjusted comparable prices
-  estimated_sales_price <- mean(comparables$adjusted_price)
+  estimated_sales_price <- mean(filtered_comps$SoldPrice)
   
   
   return(estimated_sales_price)
@@ -311,20 +295,27 @@ server <- function(input, output) {
                                  latitude = input$latitude,
                                  YearBuilt = input$yblt)
     
-    
-    estimated_sp <- sales_comparison(input_property, df_cont)
+  
     
     similar_properties <- calculate_similarity(input_property, df_cont)
+    print('similar')
+    print(similar_properties)
+    
     
     sorted_properties <- similar_properties[order(similar_properties$distances), ]
     
-    top_six <- head(df_cont, 6)
+    top_one <- head(sorted_properties, 1)
     
-    averages <- calculate_averages(top_six)
+    
+    estimated_sp <- sales_comparison(input_property, top_one)
+    
+    
+    
+    averages <- calculate_averages(top_one)
     
     averages$esp <- estimated_sp
     
-    list(top_six = top_six, averages = averages)
+    list(top_six = top_one, averages = averages)
     
   })
   
@@ -334,14 +325,3 @@ server <- function(input, output) {
 
 
 shinyApp(ui, server)
-
-
-
-
-
-
-
-
-
-
-
