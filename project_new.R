@@ -117,11 +117,8 @@ expand_cluster <- function(data, clusters, point_index, neighbors, cluster_id, e
 }
 
 
-
-#############################################################################################
 #############################################################################################
 # SHINY APP  ################################################################################
-#############################################################################################
 #############################################################################################
 #install.packages("shiny")
 #install.packages("leaflet")
@@ -374,7 +371,7 @@ ui <- fluidPage(
     
     mainPanel(
       # Output
-      h4("K-means"),
+      h4("Enhanced K-means"),
       h5("Top6 Overall Results based on distance"),
       tableOutput("results"),
       h5("Cluster Results based on distance"),
